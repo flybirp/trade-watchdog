@@ -2,6 +2,8 @@
 
 交易条件巡检搭档——读取 [trade-buddy](https://github.com/flybirp/trade-buddy) 产出的交易决策单，定期比对「达成条件清单」与「阻断条件清单」，**只在有事发生时才报告，无变化保持静默**。
 
+![trade-buddy × trade-watchdog 协作关系与使用流程](overview.png)
+
 ## 它解决什么问题
 
 trade-buddy 出的决策单里有两张表：
