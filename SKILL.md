@@ -125,8 +125,10 @@ npx -y westock-data-clawhub@1.0.4 technical hkHSTECH --group ma,macd
 
 | 数据源 | 可自动取数 | 说明 |
 |---|---|---|
-| `westock` | ✅ | `kline` / `asfund` / `hkfund` / `etf` / `technical` |
+| `westock` | ✅ | `kline` / `asfund` / `hkfund` / `etf` / `technical`。实体是公开 npm 包：`npx -y westock-data-clawhub@1.0.4 <命令>`，**任何有 Node.js 的客户端（含 Codex）都能跑**，不依赖 WorkBuddy 的「WeStock Data」skill |
 | `futu`（OpenD） | ⚠️ 需前置探测 | 卖空、每手股数、盘口、机构持仓 |
+
+**不要因找不到同名 skill 就误判「本机没有数据 CLI」**——westock 直接跑 `npx` 命令即可。
 
 **以下数据源巡检不使用**——它们是分析工具，不是指标取数通道。条件若依赖它们，观测方式应写 `人工:` 或 `不可观测:`：
 
