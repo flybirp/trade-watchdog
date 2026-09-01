@@ -105,18 +105,55 @@ ls outputs/watch/*.watch.md 2>/dev/null
 按观测方式里的命令实际执行。常用：
 
 ```bash
-PY=python3
-# 指数/个股点位
+# 指数/个股点位与量额
 npx -y westock-data-clawhub@1.0.4 kline hkHSTECH --period day --limit 2
+# A 股主力资金流（个股条件最常用）
+npx -y westock-data-clawhub@1.0.4 asfund sz001270,sh688333
 # ETF 溢价与规模
 npx -y westock-data-clawhub@1.0.4 etf sh513180
-# 资金流（含港股通持股）
+# 港股资金流（含港股通持股）
 npx -y westock-data-clawhub@1.0.4 hkfund hk03888
 # 技术指标
 npx -y westock-data-clawhub@1.0.4 technical hkHSTECH --group ma,macd
 ```
 
 **批量优先**：同一命令能覆盖多个条件就一次跑完，逗号分隔多代码。
+
+### 4.5 数据源边界与执行安全
+
+**能自动扫的数据源只有两个**：
+
+| 数据源 | 可自动取数 | 说明 |
+|---|---|---|
+| `westock` | ✅ | `kline` / `asfund` / `hkfund` / `etf` / `technical` |
+| `futu`（OpenD） | ⚠️ 需前置探测 | 卖空、每手股数、盘口、机构持仓 |
+
+**以下数据源巡检不使用**——它们是分析工具，不是指标取数通道。条件若依赖它们，观测方式应写 `人工:` 或 `不可观测:`：
+
+- `tencent-news`、`cninfo-stock-data`、`cninfo-filing-scraper`、`agentic_search`、`量能异动监控`
+
+**futu 层三条硬纪律**（定时场景下违反会卡死任务）：
+
+1. **必须先跑 `probe`**。脚本位于 `trade-buddy/scripts/futu_quote.py`（**跨 skill 依赖**，见下）。退出码 `0` 才继续，`3` 表示 OpenD 未运行 → 整层跳过，禁止重试
+2. **代码格式不同**：futu 用 `HK.03888` / `SH.600000` / `US.AAPL`，与 westock 的 `hk03888` 不同，必须转换
+3. **不可用时标 `数据缺失`**，并在报告里写明「OpenD 未运行」，不得静默跳过
+
+> **`OpenQuoteContext` 连接失败时会无限重连**（实测 19 次以上不退出）。交互式分析时用户能手动中断，**定时巡检时无人值守，会挂死整个任务**。所以 `probe` 不是可选项。
+
+**跨 skill 依赖声明**：本 skill 不自带 `futu_quote.py`。若决策单含 `futu:` 观测方式而本地未安装 trade-buddy，应提示用户安装，不得自行构造连接代码。
+
+### 4.6 已知无效调用（继承 trade-buddy，不要重试）
+
+| 调用 | 实际表现 | 处理方式 |
+|---|---|---|
+| `westock quote` | 直接返回「当前渠道不可用」 | 现价取最新日K收盘（`kline --limit 1`） |
+| `westock reserve` | 只回空壳，无业绩预告数据 | 业绩类条件一律写 `人工:` |
+| `westock finance` | 结构化财务滞后到上一年年报 | 当年中报条件不得依赖它，写 `人工:` |
+| `asfund` 输出解析 | `MarginTradeInfos`/`LhbInfos` 是内嵌 JSON，按 `\|` split 会**列错位** | 必须按表头行建 dict 再取字段，不能用列序号硬编码 |
+| 港股 `chip` / `lhb` / `blocktrade` / `margintrade` | 分别报「仅支持沪深A股」「当日无龙虎榜数据」「仅沪深」 | 港股条件不得用这些，写 `不可观测:` |
+| 港股 `technical` 的 KDJ/RSI/WR/DMI/OBV | 返回 `-` | 只能用 MA / MACD / BOLL / BIAS |
+
+**`asfund` 的解析坑尤其危险**：列错位不会报错，只会静默比错数值——watchdog 会拿错误的资金流数据去判定条件是否命中。
 
 取到值后与阈值比对，判定四态之一：
 
@@ -181,6 +218,18 @@ npx -y westock-data-clawhub@1.0.4 technical hkHSTECH --group ma,macd
 
 没有「观测方式」就无法判断能否自动取数。此时应提示补齐，而不是凭条件描述猜一个数据源去查——猜错比不查更糟。
 
+### futu 命令未 probe 就跑
+
+`OpenQuoteContext` 连接失败会无限重连。交互式分析尚可由用户中断，**定时巡检无人值守，会挂死整个任务**。跑任何 `futu:` 命令前必须先 `probe`。
+
+### 用分析型数据源当取数通道
+
+`tencent-news`、`cninfo`、`agentic_search` 是给 trade-buddy 做分析用的，返回的是非结构化叙述，不适合做阈值比对。条件若只能靠它们，应标 `人工:`，由用户在观测时点自行判断。
+
+### 静默跳过 futu 缺失
+
+OpenD 未运行时，含 `futu:` 观测方式的条件必须标 `数据缺失` 并在报告中写明原因，不能因为取不到数就不提这一条。用户需要知道「这条今天没查到」，而不是看到一片「未触发」。
+
 ## Verification
 
 交付前检查：
@@ -192,6 +241,9 @@ npx -y westock-data-clawhub@1.0.4 technical hkHSTECH --group ma,macd
 - [ ] 是否检查了人工项的观测时点
 - [ ] 是否写入了 `outputs/watch/`，未修改原决策单
 - [ ] 输出是否一屏可看完
+- [ ] **`futu:` 条件是否已先 `probe`（退出码 3 时整层跳过而非重试）**
+- [ ] **是否避开了「已知无效调用」表中的全部 6 条**
+- [ ] **`asfund` 是否按表头建 dict 解析，未用列序号硬编码**
 
 ## References
 

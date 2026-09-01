@@ -109,14 +109,42 @@ futu: shortvol HK.03888 30
 | 技术指标 | MA、MACD、BOLL | ✅（港股部分指标为空，见下） | `technical` |
 | ETF 溢价 / 规模 | 折溢价率、基金规模、申购状态 | ✅ | `etf` |
 | 资金流 | 主力净流入、港股通持股变动 | ✅ | `asfund` / `hkfund` |
-| 卖空数据 | 卖空量、空头持仓 | ⚠️ 需 OpenD | `futu_quote.py` |
+| 卖空数据 | 卖空量、空头持仓 | ⚠️ 需 OpenD + 先 `probe` | `futu_quote.py`（在 trade-buddy 内） |
 | 公告事件 | 减持、回购、重大合同 | ⚠️ 半自动 | 公告站 + 检索 |
 | 财报数据 | 营收、EPS、利润率 | ❌ 按季度披露 | 年报 / 中报 |
 | 指数估值 | 指数 PE / PB 及分位 | ❌ 接口常返回 0 | 券商研报 / 指数公司 |
 | 卖方预期 | EPS 一致预期 | ❌ 无稳定接口 | 研报 |
 | 宏观 | 利率决议、汇率、政策 | ❌ | 新闻 / 日历 |
+| 新闻 / 政策催化 | 政策落地、事件发酵 | ❌ 非结构化 | 标 `人工:`，不进自动巡检 |
 
 **港股技术指标注意**：`technical` 对港股只有 MA / MACD / BOLL / BIAS 有效，KDJ / RSI / WR / DMI / OBV 返回 `-`。**不要用返回 `-` 的指标做条件**，否则 watchdog 永远读到空值。
+
+**分析型数据源不进巡检**：`tencent-news`、`cninfo-stock-data`、`cninfo-filing-scraper`、`agentic_search`、`量能异动监控` 是 trade-buddy 做分析用的，返回非结构化叙述，无法做阈值比对。依赖它们的条件一律写 `人工:`。
+
+---
+
+## 4.5 跨 skill 依赖与执行安全
+
+### `futu:` 观测方式的依赖
+
+`futu_quote.py` 位于 **trade-buddy** 的 `scripts/` 目录，trade-watchdog 不自带。填写 `futu:` 观测方式前必须确认：
+
+1. 本地已安装 trade-buddy（或该脚本可访问）
+2. 已装 `futu-api` 且 OpenD 正在运行
+3. **watchdog 执行前必须先跑 `probe`**，退出码 `3` 时整层跳过
+
+> **为什么这条是硬约束**：`OpenQuoteContext` 连接失败会**无限重连**（实测 19 次以上不退出）。交互式分析用户能手动中断；**定时巡检无人值守，会挂死整个任务**。
+
+### 已知无效调用（watchdog 侧同样适用）
+
+| 调用 | 实际表现 | 填写时如何处理 |
+|---|---|---|
+| `westock quote` | 返回「当前渠道不可用」 | 现值改 `kline --limit 1` |
+| `westock reserve` | 空壳，无预告数据 | 业绩类条件写 `人工:` |
+| `westock finance` | 滞后到上一年年报 | 当年中报条件写 `人工:` |
+| `asfund` 解析 | 内嵌 JSON，按 `\|` split **列错位** | watchdog 必须按表头建 dict；**错位不报错，只会静默比错值** |
+| 港股 `chip`/`lhb`/`blocktrade`/`margintrade` | 明确报错 | 港股条件写 `不可观测:` |
+| 港股 `technical` KDJ/RSI/WR/DMI/OBV | 返回 `-` | 只用 MA/MACD/BOLL/BIAS |
 
 ---
 
