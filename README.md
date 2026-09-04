@@ -128,8 +128,10 @@ git clone https://github.com/flybirp/trade-watchdog.git ~/.codex/skills/trade-wa
 
 **前置依赖**：
 
-- [trade-buddy](https://github.com/flybirp/trade-buddy) —— 本 skill 消费它产出的决策单，只装 watchdog 没有意义
+- [trade-buddy](https://github.com/flybirp/trade-buddy) —— 正式巡检消费它产出的决策单
 - westock 数据通道（巡检自动项用）
+
+**没装 trade-buddy 也能先试用**：内置了 `examples/` 示例决策单（恒生科技指数，8 条条件），没有现成决策单时会自动用它现场演示一次完整巡检——拉真实行情、比阈值、出报告，先看到它能做什么，而不是只回一句「请先提供决策单」。
 
 **可选**：`futu:` 观测方式需要 trade-buddy 的 `scripts/futu_quote.py` + 本地 OpenD 运行。watchdog 会先 `probe`，OpenD 没开就整层跳过并标「数据缺失」——不会挂起任务，也不会中断巡检。
 
