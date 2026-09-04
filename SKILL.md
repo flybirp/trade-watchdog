@@ -1,8 +1,13 @@
 ---
 name: trade-watchdog
 description: 交易条件巡检搭档。定期（每日/每周）读取 trade-buddy 生成的交易决策单，逐条比对「达成条件清单」与「阻断条件清单」，判断是否有条件命中、失效或状态跃迁，输出极简巡检报告。只在有事发生时才报，无变化保持静默。当用户说「帮我盯一下这份决策单」「每天看看恒生科技的条件有没有变化」「扫一下有没有条件命中」「这些条件现在什么状态」时使用。需要配合 trade-buddy 产出的决策单工作，不自己做分析、不给新结论。未提供决策单时，会用内置示例现场演示一次完整巡检，自证能力而非空转。
-description_zh: 交易条件巡检
-description_en: Trade condition watchdog
+display_name: 交易条件巡检
+display_name_en: Trade Watchdog
+description_zh: 交易条件巡检搭档——定期读取 trade-buddy 生成的交易决策单，逐条比对「达成条件」与「阻断条件」，判断条件是否命中、失效或状态跃迁，输出极简巡检报告。只在有事发生时报告，无变化保持静默。需配合 trade-buddy 使用；无决策单时用内置示例演示。
+description_en: Trade Watchdog — a periodic monitor for trade decision cards produced by trade-buddy. It checks each "met condition" and "blocker condition" for hits, failures or state transitions and outputs a minimal report, staying silent when nothing changed. Designed to work together with trade-buddy; runs a built-in demo when no decision card is provided.
+category: 投资理财
+version: 1.1.0
+author: flybirp
 disable: false
 agent_created: true
 ---

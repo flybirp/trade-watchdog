@@ -1,6 +1,14 @@
 # trade-watchdog
 
-交易条件巡检搭档——读取 [trade-buddy](https://github.com/flybirp/trade-buddy) 产出的交易决策单，定期比对「达成条件清单」与「阻断条件清单」，**只在有事发生时才报告，无变化保持静默**。
+<p align="center">
+  <img src="assets/logo-512.png" width="160" alt="trade-watchdog logo">
+</p>
+
+<p align="center">
+  <b>交易条件巡检搭档</b> · v1.1.0 · 分类：投资理财 · Author: flybirp
+</p>
+
+读取 [trade-buddy](https://github.com/flybirp/trade-buddy) 产出的交易决策单，定期比对「达成条件清单」与「阻断条件清单」，**只在有事发生时才报告，无变化保持静默**。
 
 ![trade-buddy × trade-watchdog 协作关系与使用流程](overview.png)
 
